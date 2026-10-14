@@ -16,7 +16,7 @@ concurrency:
 jobs:
   check:
     name: check (node ${{ matrix.node }})
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, repo-pi-cliproxyapi]
     strategy:
       fail-fast: false
       matrix:
