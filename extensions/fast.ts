@@ -15,6 +15,13 @@ import { log } from "./log.ts";
 
 export const PRIORITY_SERVICE_TIER = "priority";
 
+/** pi's built-in Codex provider, and the id prefix of its tiered GPT models. */
+export const NATIVE_CODEX_PROVIDER = "openai-codex";
+const NATIVE_CODEX_FAST_PREFIX = "gpt-";
+
+/** The model shape the Fast checks need: an id plus the provider serving it. */
+type Candidate = Pick<Model<any>, "provider"> & { id: string };
+
 export class FastModeController {
 	private enabled: boolean;
 	private supported = new Set<string>();
@@ -49,35 +56,42 @@ export class FastModeController {
 	}
 
 	/**
+	 * Whether this extension is responsible for Fast on this model at all.
+	 *
+	 * Native Codex GPT models and models served by `providerId` are ours; a model
+	 * from another provider is somebody else's, so Fast says nothing about whether
+	 * *it* could be fast. Callers that report to the user need that distinction:
+	 * "switch to a Fast-capable model" only makes sense for a foreign model, while
+	 * "does not advertise a priority service tier" only makes sense for ours.
+	 */
+	managesModel(model: Candidate, providerId: string): boolean {
+		if (model.provider === NATIVE_CODEX_PROVIDER) {
+			return model.id.trim().toLowerCase().startsWith(NATIVE_CODEX_FAST_PREFIX);
+		}
+		return model.provider === providerId;
+	}
+
+	/** Whether Fast applies to this model: native Codex GPT, or a catalog tier. */
+	isFastCapableModel(model: Candidate, providerId: string): boolean {
+		if (!this.managesModel(model, providerId)) {
+			return false;
+		}
+		return model.provider === NATIVE_CODEX_PROVIDER || this.isModelSupported(model.id);
+	}
+
+	/**
 	 * What the footer should say about Fast for this model: `on` or `off` when the
 	 * model has a priority tier, `undefined` when it has none (nothing to show).
 	 */
-	stateFor(modelId: string): "on" | "off" | undefined {
-		if (!this.isModelSupported(modelId)) {
-			return undefined;
-		}
-		return this.enabled ? "on" : "off";
-	}
-
-	/** Whether Fast changes the wire request for this model right now. */
-	isEffectiveFor(modelId: string): boolean {
-		return this.enabled && this.isModelSupported(modelId);
-	}
-
-	isFastCapableModel(model: Pick<Model<any>, "provider"> & { id: string }, providerId: string): boolean {
-		return model.provider === "openai-codex" && model.id.trim().toLowerCase().startsWith("gpt-")
-			? true
-			: model.provider === providerId && this.isModelSupported(model.id);
-	}
-
-	stateForModel(model: Pick<Model<any>, "provider"> & { id: string }, providerId: string): "on" | "off" | undefined {
+	stateForModel(model: Candidate, providerId: string): "on" | "off" | undefined {
 		if (!this.isFastCapableModel(model, providerId)) {
 			return undefined;
 		}
 		return this.enabled ? "on" : "off";
 	}
 
-	isEffectiveForModel(model: Pick<Model<any>, "provider"> & { id: string }, providerId: string): boolean {
+	/** Whether Fast changes the wire request for this model right now. */
+	isEffectiveForModel(model: Candidate, providerId: string): boolean {
 		return this.enabled && this.isFastCapableModel(model, providerId);
 	}
 }

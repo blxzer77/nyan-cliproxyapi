@@ -111,7 +111,7 @@ export default async function (pi: ExtensionAPI): Promise<void> {
 	const usage = new UsageReporter({
 		providerId: identity.providerId,
 		pauseMode,
-		isFastEffective: (model) => model.provider === identity.providerId && fastMode.isEffectiveFor(model.id),
+		isFastEffective: (model) => fastMode.isEffectiveForModel(model, identity.providerId),
 	});
 	usage.register(pi);
 	registerTransientErrorNormalizer(pi, identity.providerId);
@@ -120,6 +120,11 @@ export default async function (pi: ExtensionAPI): Promise<void> {
 	 * Gate every provider request behind the pause setting, and inject the priority
 	 * service tier when Fast applies. `before_provider_request` hands back a
 	 * replacement payload, so this needs no stream handler.
+	 *
+	 * Covers both providers this extension handles: models served by `providerId`
+	 * and pi's native `openai-codex` GPT models (see `FastModeController.managesModel`).
+	 * The usage summary below is narrower on purpose — it reports what went through
+	 * the proxy, so a native Codex request is not counted there.
 	 */
 	pi.on("before_provider_request", async (event, ctx) => {
 		const model = ctx.model;
