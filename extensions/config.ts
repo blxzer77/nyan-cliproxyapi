@@ -22,7 +22,7 @@ export const CLIENT_VERSION = "pi";
 
 // Catalog discovery must not keep a CLI invocation waiting on an unreachable proxy;
 // cached models remain usable while the background refresh retries later.
-export const MODELS_REQUEST_TIMEOUT_MS = 10_000;
+export const MODELS_REQUEST_TIMEOUT_MS = 30_000;
 /**
  * Minimum spacing between network catalog fetches. Several triggers can fire within
  * seconds of each other (extension load, pi's own model refresh, `session_start`),
