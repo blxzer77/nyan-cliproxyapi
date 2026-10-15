@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   publish:
-    runs-on: [self-hosted, Linux, X64, repo-pi-cliproxyapi]
+    runs-on: [self-hosted, Linux, X64, repo-nyan-cliproxyapi]
     steps:
       - uses: actions/checkout@v7
 

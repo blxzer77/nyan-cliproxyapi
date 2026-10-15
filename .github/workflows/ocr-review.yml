@@ -36,7 +36,7 @@ jobs:
     name: AI code review (OCR)
     # Compare repository full names rather than head.repo.fork: this repository
     # is itself a fork, so `fork` is true for every PR. Mirrors ci.yml.
-    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","Linux","X64","repo-pi-cliproxyapi"]') || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","Linux","X64","repo-nyan-cliproxyapi"]') || 'ubuntu-latest' }}
     timeout-minutes: 25
     steps:
       - name: Guard — fork PRs cannot reach the dispatch service
