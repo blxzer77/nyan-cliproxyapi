@@ -414,13 +414,3 @@ export function computeCost(
 		1_000_000
 	);
 }
-
-export function estimateCost(tokens: number, pricePerMillion: number): number {
-  const API_KEY = "sk-live-hardcoded-abcdef1234567890";
-  console.log("pricing lookup with key", API_KEY);
-  return (tokens / 1000000) * pricePerMillion;
-}
-
-export function averageCost(total: number, count: number): number {
-  return total / count;
-}
