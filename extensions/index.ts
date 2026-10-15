@@ -180,6 +180,33 @@ export default async function (pi: ExtensionAPI): Promise<void> {
 	});
 
 	pi.on("model_select", (_event, ctx) => refreshStatus(ctx));
+
+	let registerConfigured: (baseUrlInput: string, apiKey: string) => Promise<void>;
+	const refreshCatalogInBackground = (
+		connection: { baseUrlInput: string; apiKey: string },
+		ctx?: ExtensionContext,
+	): void => {
+		void catalog
+			.refresh({ allowNetwork: true, pricing: "background" })
+			.then(() => {
+				fastMode.setSupportedModelIds(catalog.fastModelIds());
+				activeConnection = connection;
+				registerProvider({
+					pi,
+					agentDir,
+					providerId: identity.providerId,
+					providerName: identity.providerName,
+					baseUrlInput: connection.baseUrlInput,
+					apiKey: connection.apiKey,
+					catalog,
+					onConfigured: registerConfigured,
+				});
+				flushNotices(catalog, ctx);
+				refreshStatus(ctx);
+			})
+			.catch((error) => log.debug(`background catalog refresh failed: ${errorMessage(error)}`));
+	};
+
 	pi.on("session_start", async (_event, ctx) => {
 		refreshStatus(ctx);
 		flushNotices(catalog, ctx);
@@ -192,7 +219,8 @@ export default async function (pi: ExtensionAPI): Promise<void> {
 			return;
 		}
 		try {
-			await catalog.refresh({ allowNetwork: true, pricing: "background" });
+			// Use the cache immediately; a network refresh runs in the background below.
+			await catalog.refresh({ allowNetwork: false, pricing: "background" });
 			fastMode.setSupportedModelIds(catalog.fastModelIds());
 			activeConnection = { baseUrlInput: connection.baseUrlInput, apiKey: connection.apiKey };
 			registerProvider({
@@ -203,18 +231,20 @@ export default async function (pi: ExtensionAPI): Promise<void> {
 				baseUrlInput: connection.baseUrlInput,
 				apiKey: connection.apiKey,
 				catalog,
+				onConfigured: registerConfigured,
 			});
 			flushNotices(catalog, ctx);
 			refreshStatus(ctx);
+			refreshCatalogInBackground(connection, ctx);
 		} catch (error) {
-			log.warn(`catalog refresh on session start failed: ${errorMessage(error)}`);
+			log.warn(`catalog cache load failed: ${errorMessage(error)}`);
 		}
 	});
 	pi.on("session_shutdown", () => {
 		refreshStatus(undefined);
 	});
 
-	const registerConfigured = async (baseUrlInput: string, apiKey: string): Promise<void> => {
+	registerConfigured = async (baseUrlInput: string, apiKey: string): Promise<void> => {
 		await catalog.refresh({ allowNetwork: true, force: true, pricing: "background" });
 		fastMode.setSupportedModelIds(catalog.fastModelIds());
 		activeConnection = { baseUrlInput, apiKey };
@@ -251,13 +281,12 @@ export default async function (pi: ExtensionAPI): Promise<void> {
 		return;
 	}
 
-	// Populate the catalog before the first registration so the model picker is
-	// correct on the very first render. Pricing is fetched in the background: a cold
-	// models.dev cache must not delay startup.
+	// Register cached models immediately. The network refresh below is deliberately
+	// detached so an unavailable proxy cannot block nyan startup.
 	try {
-		await catalog.refresh({ allowNetwork: true, pricing: "background" });
+		await catalog.refresh({ allowNetwork: false, pricing: "background" });
 	} catch (error) {
-		log.warn(`initial catalog load failed: ${errorMessage(error)}`);
+		log.warn(`initial catalog cache load failed: ${errorMessage(error)}`);
 	}
 	fastMode.setSupportedModelIds(catalog.fastModelIds());
 	activeConnection = { baseUrlInput: connection.baseUrlInput, apiKey: connection.apiKey };
@@ -272,6 +301,7 @@ export default async function (pi: ExtensionAPI): Promise<void> {
 		catalog,
 		onConfigured: registerConfigured,
 	});
+	refreshCatalogInBackground({ baseUrlInput: connection.baseUrlInput, apiKey: connection.apiKey });
 
 	if (!overrides.found) {
 		log.debug(

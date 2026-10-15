@@ -431,9 +431,10 @@ export class CatalogController {
 		// that last listed the model rather than from this one.
 		const baselineFetchedAt = known.fetchedAt ?? now;
 		const final = reconcileCatalog(fresh, known.models, overrides, now, baselineFetchedAt);
-		this.reportDroppedModels(final.dropped, final.retained);
-		this.reportAddedModels(known.models, final.models);
-		this.applyCatalog(final.models, "remote", now);
+		const visible = final.models.filter((model) => model.meta.extras?.prefer_websockets !== true);
+		this.reportDroppedModels(final.dropped, visible);
+		this.reportAddedModels(known.models, visible);
+		this.applyCatalog(visible, "remote", now);
 		this.lastError = undefined;
 		if (this.lastModelsUrl) {
 			saveCatalogCache(this.agentDir, this.lastModelsUrl, this.models);
