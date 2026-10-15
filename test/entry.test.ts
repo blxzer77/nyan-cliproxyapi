@@ -13,6 +13,7 @@ const SOL = {
 	visibility: "list",
 	prefer_websockets: true,
 };
+const DEEPSEEK = { slug: "deepseek-flash", display_name: "DeepSeek", context_window: 128_000, visibility: "list" };
 
 /** The slice of ExtensionAPI the extension entry point uses. */
 interface FakePi {
@@ -102,7 +103,7 @@ afterEach(() => {
 
 describe("extension entry point", () => {
 	it("registers the provider, commands and hooks against a configured proxy", async () => {
-		installFetch([SOL]);
+		installFetch([SOL, DEEPSEEK]);
 		const { pi, fake } = createFakePi();
 		const extension = (await import("../extensions/index.ts")).default;
 
@@ -112,7 +113,7 @@ describe("extension entry point", () => {
 		const registration = fake.providers.get("cliproxyapi");
 		expect(registration).toBeDefined();
 		expect(registration?.models).toHaveLength(1);
-		expect(registration?.models?.[0]).toMatchObject({ id: "gpt-6.1-sol", api: "openai-codex-responses" });
+		expect(registration?.models?.[0]).toMatchObject({ id: "deepseek-flash", api: "openai-responses" });
 		// The login flow is offered so the provider can be reconfigured.
 		expect(registration?.oauth).toBeDefined();
 
@@ -128,7 +129,7 @@ describe("extension entry point", () => {
 		// session_start throttles a refresh that just succeeded, so open the throttle
 		// for this test through the documented env override.
 		process.env.CLIPROXYAPI_CATALOG_MIN_REFRESH_MS = "0";
-		installFetch([SOL]);
+		installFetch([DEEPSEEK]);
 		const { pi, fake } = createFakePi();
 		const extension = (await import("../extensions/index.ts")).default;
 		await extension(pi);
@@ -136,7 +137,10 @@ describe("extension entry point", () => {
 		expect(fake.providers.get("cliproxyapi")?.models).toHaveLength(1);
 
 		// A second fetch lists another model; session_start picks it up.
-		installFetch([SOL, { slug: "space-bunny", display_name: "Bunny", context_window: 272_000, visibility: "list" }]);
+		installFetch([
+			DEEPSEEK,
+			{ slug: "space-bunny", display_name: "Bunny", context_window: 272_000, visibility: "list" },
+		]);
 		const sessionStart = fake.handlers.get("session_start")?.[0];
 		expect(sessionStart).toBeDefined();
 		const notifications: Array<{ message: string; type?: string }> = [];

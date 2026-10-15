@@ -251,11 +251,13 @@ export class CatalogController {
 		const fresh = mapCatalog(this.lastEntries, { overrides, costCatalog: this.costCatalog, now });
 		const final = reconcileCatalog(fresh, this.models, overrides, now, this.fetchedAt ?? now);
 		this.applyCatalog(final.models, "remote", now);
-		saveCatalogCache(this.agentDir, this.lastModelsUrl, final.models);
+		saveCatalogCache(this.agentDir, this.lastModelsUrl, this.models);
 	}
 
 	private applyCatalog(models: CatalogModel[], source: "remote" | "cache", fetchedAt: number): void {
-		this.models = models;
+		// Native Codex models belong to nyan's official openai-codex provider.
+		// Keeping them out of this provider prevents accidental proxy routing.
+		this.models = models.filter((model) => model.meta.extras?.prefer_websockets !== true);
 		this.fetchedAt = fetchedAt;
 		this.lastSource = source;
 	}
@@ -434,7 +436,7 @@ export class CatalogController {
 		this.applyCatalog(final.models, "remote", now);
 		this.lastError = undefined;
 		if (this.lastModelsUrl) {
-			saveCatalogCache(this.agentDir, this.lastModelsUrl, final.models);
+			saveCatalogCache(this.agentDir, this.lastModelsUrl, this.models);
 		}
 	}
 }
