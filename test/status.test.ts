@@ -45,6 +45,17 @@ describe("buildStatusLabels", () => {
 		});
 	});
 
+	it("supports native openai-codex GPT models", () => {
+		const fast = fastModel();
+		fast.setEnabled(true);
+		expect(
+			buildStatusLabels({ provider: "openai-codex", id: "gpt-6-astra" }, fast, new PauseController(), PROVIDER),
+		).toEqual({
+			fast: "on",
+			paused: false,
+		});
+	});
+
 	it("omits the fast label for a model with no priority tier", () => {
 		const labels = buildStatusLabels(
 			{ provider: PROVIDER, id: "space-bunny" },
