@@ -60,10 +60,11 @@ jobs:
           BASE: ${{ github.event.pull_request.base.sha }}
           HEAD: ${{ github.event.pull_request.head.sha }}
         run: |
-          set -euo pipefail
+          set -uo pipefail
           git fetch --no-tags --quiet origin "$BASE" "$HEAD"
-          # Three-dot (merge-base) is what GitHub shows in "Files changed".
-          if ! git diff "$BASE"...'$HEAD' > /tmp/pr.diff 2>/dev/null; then
+          # Three-dot (merge-base) matches what GitHub shows in "Files changed".
+          # `set -e` is deliberately off here: the fallback below is the point.
+          if ! git diff "$BASE"..."$HEAD" > /tmp/pr.diff 2>/dev/null; then
             git diff "$BASE" "$HEAD" > /tmp/pr.diff
           fi
           echo "lines=$(wc -l < /tmp/pr.diff)" >> "$GITHUB_OUTPUT"
