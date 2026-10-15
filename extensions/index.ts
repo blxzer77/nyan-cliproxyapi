@@ -10,7 +10,8 @@
  * - The catalog comes from `/v1/models?client_version=pi` through pi's
  *   `refreshModels` hook, and is corrected by a declarative overrides file rather
  *   than by editing this extension.
- * - `service_tier: "priority"` (Fast) is injected through `before_provider_request`.
+ * - `service_tier: "priority"` (Fast) is injected through `before_provider_request`
+ *   for both CLIProxyAPI models and native `openai-codex` GPT models.
  */
 
 import { type ExtensionAPI, type ExtensionContext, getAgentDir } from "@earendil-works/pi-coding-agent";
@@ -47,9 +48,8 @@ const FAST_STATUS_KEY = "cpa-fast";
 /**
  * What the footer should say, derived from what the pause gate and Fast actually do.
  *
- * The pause gate only applies to this provider's requests (`before_provider_request`
- * returns early for every other provider), so a `paused` label on another provider's
- * model would claim a gate that does not exist.
+ * The pause gate applies to this provider and native `openai-codex` requests;
+ * a `paused` label on another provider's model would claim a gate that does not exist.
  */
 export function buildStatusLabels(
 	model: { provider: string; id: string } | undefined,
@@ -57,10 +57,10 @@ export function buildStatusLabels(
 	pauseMode: PauseController,
 	providerId: string,
 ): { fast?: "on" | "off"; paused: boolean } {
-	if (!model || model.provider !== providerId) {
+	if (!model || (model.provider !== providerId && model.provider !== "openai-codex")) {
 		return { paused: false };
 	}
-	const fast = fastMode.stateFor(model.id);
+	const fast = fastMode.stateForModel(model, providerId);
 	return { ...(fast ? { fast } : {}), paused: pauseMode.isEnabled() };
 }
 
@@ -122,13 +122,13 @@ export default async function (pi: ExtensionAPI): Promise<void> {
 	 * replacement payload, so this needs no stream handler.
 	 */
 	pi.on("before_provider_request", async (event, ctx) => {
-		if (ctx.model?.provider !== identity.providerId) {
+		const model = ctx.model;
+		if (!model || (model.provider !== identity.providerId && model.provider !== "openai-codex")) {
 			return;
 		}
 		await waitForPauseToEnd(agentDir, pauseMode);
 
-		const model = ctx.model;
-		if (!model || !fastMode.isEffectiveFor(model.id)) {
+		if (!fastMode.isEffectiveForModel(model, identity.providerId)) {
 			return undefined;
 		}
 		const next = withPriorityServiceTier(event.payload);

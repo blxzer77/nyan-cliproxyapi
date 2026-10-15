@@ -1,9 +1,10 @@
 /**
- * Fast mode: CLIProxyAPI's OpenAI priority service tier.
+ * Fast mode: OpenAI's priority service tier.
  *
- * A model is Fast-capable when the catalog advertises a non-empty `service_tiers`
- * array. Enabling fast injects `service_tier: "priority"` into the request payload
- * through pi's `before_provider_request` hook, so no stream handler is involved.
+ * Proxy models are Fast-capable when the catalog advertises a non-empty
+ * `service_tiers` array. Native `openai-codex` GPT models are also Fast-capable:
+ * their built-in catalog exposes tiered pricing and the same `service_tier: "priority"`
+ * request field is accepted by the Codex Responses API.
  *
  * Priority processing bills at a higher rate, so this is off by default.
  */
@@ -63,8 +64,21 @@ export class FastModeController {
 		return this.enabled && this.isModelSupported(modelId);
 	}
 
+	isFastCapableModel(model: Pick<Model<any>, "provider"> & { id: string }, providerId: string): boolean {
+		return model.provider === "openai-codex" && model.id.trim().toLowerCase().startsWith("gpt-")
+			? true
+			: model.provider === providerId && this.isModelSupported(model.id);
+	}
+
+	stateForModel(model: Pick<Model<any>, "provider"> & { id: string }, providerId: string): "on" | "off" | undefined {
+		if (!this.isFastCapableModel(model, providerId)) {
+			return undefined;
+		}
+		return this.enabled ? "on" : "off";
+	}
+
 	isEffectiveForModel(model: Pick<Model<any>, "provider"> & { id: string }, providerId: string): boolean {
-		return model.provider === providerId && this.isEffectiveFor(model.id);
+		return this.enabled && this.isFastCapableModel(model, providerId);
 	}
 }
 

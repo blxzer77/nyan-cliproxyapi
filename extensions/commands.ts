@@ -437,7 +437,7 @@ export function registerCommands(context: CommandContext): void {
 
 	let fastToggleInProgress = false;
 	pi.registerCommand("fast", {
-		description: "Toggle CLIProxyAPI Fast mode (OpenAI priority service tier).",
+		description: "Toggle Fast mode (OpenAI priority service tier).",
 		handler: async (args, ctx) => {
 			if (!requireNoArgs(args, "fast", ctx)) {
 				return;
@@ -459,7 +459,7 @@ export function registerCommands(context: CommandContext): void {
 				refreshStatus(ctx);
 
 				const model = ctx.model;
-				const supported = model && model.provider === providerId ? fastMode.isModelSupported(model.id) : undefined;
+				const supported = model ? fastMode.isFastCapableModel(model, providerId) : undefined;
 				if (!enabled) {
 					ctx.ui.notify("Fast mode disabled.", "info");
 				} else if (supported === false) {
