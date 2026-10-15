@@ -44,6 +44,8 @@ export interface ConfigFile {
 	fast?: boolean;
 	/** Persisted request-pause preference. */
 	pause?: boolean;
+	/** Separate proxy key accepted by CLIProxyAPI for the native Codex WebSocket bridge. */
+	codexWsApiKey?: string;
 	/** Override the override-file location. Absolute path, or relative to the agent dir. */
 	overridesFile?: string;
 }
@@ -68,6 +70,7 @@ export interface ResolvedEndpoints {
 export interface ResolvedConnection extends ResolvedEndpoints {
 	baseUrlInput: string;
 	apiKey: string;
+	codexWsApiKey?: string;
 }
 
 export function firstNonEmpty(...values: Array<string | undefined | null>): string | undefined {
@@ -231,11 +234,16 @@ export function resolveCatalogMinRefreshMs(): number {
 	const parsed = Number(raw);
 	if (!Number.isFinite(parsed) || parsed < 0) {
 		console.warn(
-			`[pi-cliproxyapi] CLIPROXYAPI_CATALOG_MIN_REFRESH_MS must be a non-negative number of milliseconds; using ${CATALOG_MIN_REFRESH_MS}`,
+			`[nyan-cliproxyapi] CLIPROXYAPI_CATALOG_MIN_REFRESH_MS must be a non-negative number of milliseconds; using ${CATALOG_MIN_REFRESH_MS}`,
 		);
 		return CATALOG_MIN_REFRESH_MS;
 	}
 	return parsed;
+}
+
+/** Native Codex WebSocket bridge key: env > config. */
+export function resolveCodexWsApiKey(agentDir: string): string | undefined {
+	return firstNonEmpty(process.env.CLIPROXYAPI_CODEX_WS_API_KEY, loadConfigSafe(agentDir).config.codexWsApiKey);
 }
 
 /** Pause preference: env CLIPROXYAPI_PAUSE > config `pause` > false. */
@@ -304,8 +312,9 @@ export function resolveConnection(agentDir: string, providerId: string): Resolve
 	if (!apiKey) {
 		return null;
 	}
+	const codexWsApiKey = firstNonEmpty(process.env.CLIPROXYAPI_CODEX_WS_API_KEY, config.codexWsApiKey);
 
-	return { baseUrlInput, apiKey, ...resolveEndpoints(baseUrlInput) };
+	return { baseUrlInput, apiKey, ...(codexWsApiKey ? { codexWsApiKey } : {}), ...resolveEndpoints(baseUrlInput) };
 }
 
 export function defaultBaseUrlInput(agentDir: string, providerId: string): string {

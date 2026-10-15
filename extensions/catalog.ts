@@ -299,7 +299,9 @@ export function toCatalogModel(model: CpaModel, options: MapOptions): CatalogMod
 	const config: ChatModelConfig = {
 		id,
 		name,
-		api: "openai-responses",
+		// Native Codex models advertise this capability and must use the Codex API
+		// implementation so pi can open the proxy's WebSocket endpoint.
+		api: model.prefer_websockets === true ? "openai-codex-responses" : "openai-responses",
 		input: buildInputModalities(model, override),
 		cost,
 		contextWindow,

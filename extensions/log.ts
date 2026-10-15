@@ -6,7 +6,7 @@
  * the TUI owns the terminal corrupts the display.
  */
 
-const PREFIX = "[pi-cliproxyapi]";
+const PREFIX = "[nyan-cliproxyapi]";
 
 let quiet = process.env.CLIPROXYAPI_QUIET === "1" || process.env.CLIPROXYAPI_QUIET === "true";
 

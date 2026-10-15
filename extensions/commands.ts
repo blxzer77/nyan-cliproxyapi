@@ -298,7 +298,7 @@ export function registerCommands(context: CommandContext): void {
 			const lines: string[] = [];
 
 			lines.push(`provider       ${identity.providerId} (${identity.providerName})`);
-			lines.push(`api            openai-responses -> {root}/backend-api/codex/responses`);
+			lines.push(`api            prefer_websockets -> openai-codex-responses (WS); others -> openai-responses`);
 			if (connection) {
 				const endpoints = resolveEndpoints(connection.baseUrlInput);
 				lines.push(`baseUrl        ${connection.baseUrlInput}`);

@@ -6,7 +6,13 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { saveConfig } from "../extensions/config.ts";
 
 const BASE_URL = "http://127.0.0.1:8317";
-const SOL = { slug: "gpt-6.1-sol", display_name: "Sol", context_window: 272_000, visibility: "list" };
+const SOL = {
+	slug: "gpt-6.1-sol",
+	display_name: "Sol",
+	context_window: 272_000,
+	visibility: "list",
+	prefer_websockets: true,
+};
 
 /** The slice of ExtensionAPI the extension entry point uses. */
 interface FakePi {
@@ -106,7 +112,7 @@ describe("extension entry point", () => {
 		const registration = fake.providers.get("cliproxyapi");
 		expect(registration).toBeDefined();
 		expect(registration?.models).toHaveLength(1);
-		expect(registration?.models?.[0]).toMatchObject({ id: "gpt-6.1-sol", api: "openai-responses" });
+		expect(registration?.models?.[0]).toMatchObject({ id: "gpt-6.1-sol", api: "openai-codex-responses" });
 		// The login flow is offered so the provider can be reconfigured.
 		expect(registration?.oauth).toBeDefined();
 

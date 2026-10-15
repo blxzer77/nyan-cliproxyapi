@@ -1,17 +1,17 @@
 /**
  * Catalog controller and provider registration.
  *
- * Registration uses pi's legacy `ProviderConfig` form with `api: "openai-responses"`
- * and no `streamSimple`, so pi-ai's built-in Responses implementation performs the
- * request. CLIProxyAPI exposes a Codex-compatible `/backend-api/codex/responses`
- * endpoint that accepts a standard Responses body, which is why this provider needs
- * neither a patched stream module nor a protocol reimplementation.
+ * Registration uses pi's provider config with per-model API selection. Generic
+ * models use `openai-responses`; models advertising `prefer_websockets` use the
+ * built-in `openai-codex-responses` implementation with the local bridge key.
+ * CLIProxyAPI then authenticates upstream with its own Codex OAuth credential.
  *
  * The catalog is refreshed through pi's `refreshModels` hook, which is generation
  * checked and can be re-run from `/cpa-refresh`.
  */
 
 import type { RefreshModelsContext } from "@earendil-works/pi-ai";
+import { streamSimple as piStreamSimple } from "@earendil-works/pi-ai/compat";
 import type { ExtensionAPI, ExtensionContext, ProviderConfig } from "@earendil-works/pi-coding-agent";
 import { loadCatalogCache, saveCatalogCache } from "./cache.ts";
 import {
@@ -33,6 +33,7 @@ import {
 	loadConfiguredDefault,
 	overridesPath,
 	resolveCatalogMinRefreshMs,
+	resolveCodexWsApiKey,
 	resolveConnection,
 	resolveEndpoints,
 	resolveIdentity,
@@ -464,6 +465,8 @@ export interface ProviderRegistrationOptions {
 	baseUrlInput: string;
 	apiKey?: string;
 	catalog: CatalogController;
+	/** Proxy key whose JWT payload supplies the account id to pi-ai's Codex API. */
+	codexWsApiKey?: string;
 	onConfigured?: (baseUrlInput: string, apiKey: string) => Promise<void>;
 }
 
@@ -472,11 +475,20 @@ export function buildProviderRegistration(options: ProviderRegistrationOptions):
 	const { agentDir, providerId, providerName, baseUrlInput, apiKey, catalog } = options;
 	const endpoints = resolveEndpoints(baseUrlInput);
 	const defaultBaseUrl = firstNonEmpty(baseUrlInput, DEFAULT_BASE_URL)!;
+	const codexWsApiKey = firstNonEmpty(options.codexWsApiKey, resolveCodexWsApiKey(agentDir));
 
 	return {
 		name: providerName,
 		baseUrl: endpoints.inferenceBaseUrl,
-		api: "openai-responses",
+		// The custom handler below is selected only for models whose catalog entry
+		// advertises prefer_websockets=true. Other models retain their own API type.
+		api: "openai-codex-responses",
+		...(codexWsApiKey
+			? {
+					streamSimple: (model, context, streamOptions) =>
+						piStreamSimple(model, context, { ...streamOptions, apiKey: codexWsApiKey }),
+				}
+			: {}),
 		// Passing apiKey as well as oauth would make `/login <provider>` ask the user
 		// to choose between the API-key and account paths. Ambient auth is only needed
 		// when no `/login` credential exists.

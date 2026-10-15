@@ -1,6 +1,6 @@
-# @blxzer77/pi-cliproxyapi
+# @blxzer77/nyan-cliproxyapi
 
-A [pi](https://github.com/earendil-works/pi) provider for [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI).
+A Nyan/PI provider for [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI).
 
 It discovers models from the proxy, lets you correct the metadata the proxy reports, pins models that keep flapping out of the catalog, and reports real token usage. It replaces [`@router-for-me/pi-cliproxyapi-provider`](https://github.com/router-for-me/pi-cliproxyapi-provider) — see [Differences from the upstream provider](#differences-from-the-upstream-provider).
 
@@ -9,16 +9,16 @@ It discovers models from the proxy, lets you correct the metadata the proxy repo
 From a local checkout — no registry or token needed, and always current:
 
 ```bash
-pi install /absolute/path/to/pi-cliproxyapi
+nyan install /absolute/path/to/nyan-cliproxyapi
 
 # or for a single run
-pi -e /absolute/path/to/pi-cliproxyapi
+nyan -e /absolute/path/to/nyan-cliproxyapi
 ```
 
-From [GitHub Packages](https://github.com/blxzer77/pi-cliproxyapi/pkgs/npm/pi-cliproxyapi):
+From [GitHub Packages](https://github.com/blxzer77/nyan-cliproxyapi/pkgs/npm/nyan-cliproxyapi):
 
 ```bash
-pi install npm:@blxzer77/pi-cliproxyapi
+nyan install npm:@blxzer77/nyan-cliproxyapi
 ```
 
 GitHub Packages requires a token even for a public package, so this path needs registry and token entries. Point **only the scope** at GitHub Packages — setting a global `registry` makes npm look for `@earendil-works/pi-ai` there too, and it only exists on npmjs:
@@ -202,24 +202,23 @@ Two things in the proxy's own config decide whether a model feels right in pi. B
 
 The upstream provider patches pi-ai's bundled `openai-codex-responses.js` at runtime with four regular expressions, writes the result to a temp file and imports it. That approach breaks whenever pi changes that file, needs eighteen hardcoded install-path probes, and prevents any model metadata correction from being expressed as configuration.
 
-This provider instead uses pi-ai's built-in `openai-responses` implementation against the proxy's Codex-compatible endpoint. Not patching is a deliberate architectural choice, and it removes the failure modes rather than guarding them:
+This provider uses pi-ai's built-in APIs without patching pi-ai source: generic models use `openai-responses`, while catalog entries marked `prefer_websockets: true` use `openai-codex-responses` through a proxy-only JWT bridge key. The bridge key is accepted only by CLIProxyAPI; the proxy still uses its server-side Codex OAuth credential upstream.
 
 | Upstream | Here |
 |---|---|
-| Regex patch of the bundled Codex stream module | `api: "openai-responses"`, no custom `streamSimple` |
+| Regex patch of the bundled Codex stream module | Per-model `openai-codex-responses` selection from catalog metadata |
 | 18 hardcoded module-path probes, temp `.mjs` cache | Nothing to resolve; pi-ai's implementation is used directly |
-| `extractAccountId` must be patched to accept plain keys | The Responses implementation has no account-id concept |
-| Codex WebSocket reuse, server-side context | SSE with the full request body, so nothing is cached server-side |
-| Proactive compaction, WebSocket reset on `/compact` | pi's own compaction decides, using native per-model `reserveTokens` |
+| `extractAccountId` must be patched to accept plain proxy keys | A separate local JWT-shaped bridge key supplies the account id expected by pi-ai |
+| Codex WebSocket reuse, server-side context | Native pi-ai WebSocket transport through CLIProxyAPI |
 | Model corrections patched into the source | `cliproxyapi-overrides.json` |
 | Pinned models impossible; missing models hidden for 7 days and warned about repeatedly | Explicit `pinned` / `unlisted` state persisted across restarts |
 | Monkeys patched footer, local TPS guess | Official status row; TPS over the generation window |
 
-It trades the Codex WebSocket transport away for the Responses transport. Verified working against a live proxy: catalog discovery, plain responses, tool calls and tool-result round-trips, exact usage, and Fast payload injection. Models the catalog marks `prefer_websockets: true` also work over this transport. Not verified here: image input, abort behaviour, context overflow, and WebSocket-only proxies.
+The bridge requires `codexWsApiKey` in `cliproxyapi.json` and the same key in CLIProxyAPI's access list. Generic models remain on ordinary Responses/SSE. Not verified here: image input, abort behaviour, context overflow, and provider-specific WebSocket retries.
 
 ## Status
 
-Published as `@blxzer77/pi-cliproxyapi@0.2.0` on GitHub Packages, with CI on Node 22.19.0 and 24.x. Usable and covered by 158 tests, but young: the overrides schema and the catalog cache schema can still change, and a cache version mismatch discards the file, costing one refresh.
+Published as `@blxzer77/nyan-cliproxyapi@0.2.0` on GitHub Packages, with CI on Node 22.19.0 and 24.x. Usable and covered by 159 tests, but young: the overrides schema and the catalog cache schema can still change, and a cache version mismatch discards the file, costing one refresh.
 
 Requirements: pi `>=1.0.0`, Node `>=22.19.0`.
 

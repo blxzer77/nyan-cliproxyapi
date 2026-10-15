@@ -29,6 +29,11 @@ function find(models: CatalogModel[], id: string): CatalogModel {
 }
 
 describe("toCatalogModel limits", () => {
+	it("uses the native Codex API for models that prefer WebSockets", () => {
+		expect(find(mapWith(undefined), "gpt-6.1-sol").config.api).toBe("openai-codex-responses");
+		expect(find(mapWith(undefined), "space-bunny").config.api).toBe("openai-responses");
+	});
+
 	it("prefers context_window by default and records the other value", () => {
 		const model = find(mapWith(undefined), "gpt-6.1-sol");
 		expect(model.config.contextWindow).toBe(272_000);

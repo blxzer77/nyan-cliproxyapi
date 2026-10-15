@@ -3,11 +3,10 @@
  *
  * Design notes:
  *
- * - Transport is pi-ai's built-in `openai-responses` against
- *   `{root}/backend-api/codex/responses`. CLIProxyAPI accepts a standard Responses
- *   body there, so the provider registers no `streamSimple` and needs no patched
- *   stream module. It also avoids the Codex WebSocket path, so nothing is cached
- *   server-side and a reused connection cannot inflate `cacheRead` after compaction.
+ * - Generic models use pi-ai's built-in `openai-responses` against
+ *   `{root}/backend-api/codex/responses`. Models advertising
+ *   `prefer_websockets=true` use pi-ai's Codex WebSocket implementation through
+ *   the local bridge key, so CLIProxyAPI can open its upstream Codex WebSocket.
  * - The catalog comes from `/v1/models?client_version=pi` through pi's
  *   `refreshModels` hook, and is corrected by a declarative overrides file rather
  *   than by editing this extension.

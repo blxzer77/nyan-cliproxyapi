@@ -1,7 +1,7 @@
 {
-	"name": "@blxzer77/pi-cliproxyapi",
+	"name": "@blxzer77/nyan-cliproxyapi",
 	"version": "0.2.0",
-	"description": "Pi provider for CLIProxyAPI: dynamic catalog, declarative model overrides, pinned models, exact usage and cost, Fast/Pause control",
+	"description": "Nyan provider for CLIProxyAPI: dynamic catalog, Codex WebSocket routing, model overrides, usage and Fast/Pause control",
 	"type": "module",
 	"keywords": [
 		"pi-package",
@@ -12,11 +12,11 @@
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/blxzer77/pi-cliproxyapi.git"
+		"url": "git+https://github.com/blxzer77/nyan-cliproxyapi.git"
 	},
-	"homepage": "https://github.com/blxzer77/pi-cliproxyapi#readme",
+	"homepage": "https://github.com/blxzer77/nyan-cliproxyapi#readme",
 	"bugs": {
-		"url": "https://github.com/blxzer77/pi-cliproxyapi/issues"
+		"url": "https://github.com/blxzer77/nyan-cliproxyapi/issues"
 	},
 	"publishConfig": {
 		"registry": "https://npm.pkg.github.com",

@@ -74,7 +74,15 @@ export function loadCatalogCache(agentDir: string, modelsUrl: string): CatalogCa
 		log.warn("ignoring catalog cache with an unexpected shape");
 		return undefined;
 	}
-	return parsed as CatalogCacheFile;
+	// Migrate caches written before native Codex WebSocket routing was exposed.
+	// Fresh catalog entries already carry the correct API; this keeps an offline
+	// restart from silently reverting prefer_websockets models to HTTP/SSE.
+	const models = parsed.models.map((model) => {
+		const preferWebSockets = model.meta.extras?.prefer_websockets === true;
+		const api = preferWebSockets ? "openai-codex-responses" : "openai-responses";
+		return model.config.api === api ? model : { ...model, config: { ...model.config, api } };
+	});
+	return { ...(parsed as CatalogCacheFile), models };
 }
 
 export function saveCatalogCache(agentDir: string, modelsUrl: string, models: CatalogModel[]): void {
