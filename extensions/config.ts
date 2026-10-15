@@ -20,7 +20,9 @@ export const AUTH_FILE_NAME = "auth.json";
 /** The models catalog query that makes CLIProxyAPI return its extended metadata. */
 export const CLIENT_VERSION = "pi";
 
-export const MODELS_REQUEST_TIMEOUT_MS = 60_000;
+// Catalog discovery must not keep a CLI invocation waiting on an unreachable proxy;
+// cached models remain usable while the background refresh retries later.
+export const MODELS_REQUEST_TIMEOUT_MS = 10_000;
 /**
  * Minimum spacing between network catalog fetches. Several triggers can fire within
  * seconds of each other (extension load, pi's own model refresh, `session_start`),
