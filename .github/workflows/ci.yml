@@ -22,7 +22,7 @@ jobs:
     # group, so untrusted fork code must not execute there. Compare repository
     # names rather than head.repo.fork, which is true for every PR while this
     # repository is itself a fork of an upstream project.
-    runs-on: ${{ ((github.event_name == 'pull_request') && (github.event.pull_request.head.repo.full_name != github.repository)) && 'ubuntu-latest' || fromJSON('["self-hosted","Linux","X64","repo-pi-cliproxyapi"]') }}
+    runs-on: ${{ ((github.event_name == 'pull_request') && (github.event.pull_request.head.repo.full_name != github.repository)) && 'ubuntu-latest' || fromJSON('["self-hosted","Linux","X64","repo-nyan-cliproxyapi"]') }}
     strategy:
       fail-fast: false
       matrix:

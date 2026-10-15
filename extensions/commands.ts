@@ -459,16 +459,17 @@ export function registerCommands(context: CommandContext): void {
 				refreshStatus(ctx);
 
 				const model = ctx.model;
-				const supported = model ? fastMode.isFastCapableModel(model, providerId) : undefined;
 				if (!enabled) {
 					ctx.ui.notify("Fast mode disabled.", "info");
-				} else if (supported === false) {
+				} else if (!model || !fastMode.managesModel(model, providerId)) {
+					// Another provider's model: Fast may well be capable there, this switch
+					// just does not reach it.
+					ctx.ui.notify("Fast mode enabled. Switch to a Fast-capable model to use it.", "info");
+				} else if (!fastMode.isFastCapableModel(model, providerId)) {
 					ctx.ui.notify(
-						`Fast mode enabled, but ${model?.id} does not advertise a priority service tier. Requests are unchanged.`,
+						`Fast mode enabled, but ${model.id} does not advertise a priority service tier. Requests are unchanged.`,
 						"warning",
 					);
-				} else if (supported === undefined) {
-					ctx.ui.notify("Fast mode enabled. Switch to a Fast-capable model to use it.", "info");
 				} else {
 					ctx.ui.notify("Fast mode enabled. Priority processing bills at a higher rate.", "info");
 				}

@@ -81,7 +81,11 @@ function isProviderMessage(message: AssistantMessage, providerId: string): boole
 export interface UsageReporterOptions {
 	providerId: string;
 	pauseMode: PauseController;
-	/** Whether Fast is in effect for a model, so the summary can mark priority billing. */
+	/** Whether Fast is in effect for a model, so the summary can mark priority billing.
+	 *
+	 * Only consulted for models served by `providerId`. This reporter measures proxy
+	 * traffic, so native `openai-codex` requests are deliberately out of scope even
+	 * though Fast applies to them. */
 	isFastEffective?: (model: { provider: string; id: string }) => boolean;
 }
 
